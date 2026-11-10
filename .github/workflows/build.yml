@@ -22,6 +22,7 @@ jobs:
           mkdir -p app/src/main/res/layout
           mkdir -p app/src/main/res/drawable
           mkdir -p app/src/main/res/values
+          mkdir -p app/src/main/res/mipmap-anydpi-v26
 
           # 1. settings.gradle
           cat << 'EOF' > settings.gradle
@@ -95,7 +96,7 @@ jobs:
           }
           EOF
 
-          # 5. AndroidManifest.xml
+          # 5. AndroidManifest.xml (এখানে android:icon এবং android:roundIcon যোগ করা হয়েছে)
           cat << 'EOF' > app/src/main/AndroidManifest.xml
           <?xml version="1.0" encoding="utf-8"?>
           <manifest xmlns:android="http://schemas.android.com/apk/res/android">
@@ -108,7 +109,9 @@ jobs:
 
               <application
                   android:allowBackup="true"
-                  android:label="WA ভয়েস অ্যানাউন্সার"
+                  android:label="WA ভয়েস অ্যানাউন্সার"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher"
                   android:supportsRtl="true"
                   android:theme="@style/Theme.AppCompat.Light.NoActionBar">
                   
@@ -121,7 +124,7 @@ jobs:
                       </intent-filter>
                   </activity>
 
-                  <!-- হোয়াটসঅ্যাপ নোটিফিকেশন লিসেনার সার্ভিস -->
+                  <!-- হোয়াটসঅ্যাপ নোটিফিকেশন লিসেনার সার্ভিস -->
                   <service
                       android:name=".WhatsAppNotificationListener"
                       android:label="WhatsApp Voice Announcer"
@@ -160,19 +163,19 @@ jobs:
 
                   btnPermission.setOnClickListener {
                       startActivity(Intent("android.settings.ACTION_NOTIFICATION_LISTENER_SETTINGS"))
-                      Toast.makeText(this, "'WA ভয়েস অ্যানাউন্সার' পারমিশন চালু করুন", Toast.LENGTH_LONG).show()
+                      Toast.makeText(this, "'WA ভয়েস অ্যানাউন্সার' পারমিশন চালু করুন", Toast.LENGTH_LONG).show()
                   }
 
                   btnToggle.setOnClickListener {
                       WhatsAppNotificationListener.isAnnouncerActive = !WhatsAppNotificationListener.isAnnouncerActive
                       if (WhatsAppNotificationListener.isAnnouncerActive) {
-                          btnToggle.text = "ভয়েস সার্ভিস বন্ধ করুন"
+                          btnToggle.text = "ভয়েস সার্ভিস বন্ধ করুন"
                           btnToggle.setBackgroundColor(android.graphics.Color.parseColor("#EF4444"))
-                          tvStatus.text = "স্ট্যাটাস: ভয়েস অ্যানাউন্সার চালু আছে ✅"
+                          tvStatus.text = "স্ট্যাটাস: ভয়েস অ্যানাউন্সার চালু আছে ✅"
                       } else {
-                          btnToggle.text = "ভয়েস সার্ভিস চালু করুন"
+                          btnToggle.text = "ভয়েস সার্ভিস চালু করুন"
                           btnToggle.setBackgroundColor(android.graphics.Color.parseColor("#10B981"))
-                          tvStatus.text = "স্ট্যাটাস: ভয়েস অ্যানাউন্সার বন্ধ আছে ⏸️"
+                          tvStatus.text = "স্ট্যাটাস: ভয়েস অ্যানাউন্সার বন্ধ আছে ⏸️"
                       }
                   }
               }
@@ -181,15 +184,15 @@ jobs:
                   super.onResume()
                   val tvStatus = findViewById<TextView>(R.id.tvStatus)
                   if (WhatsAppNotificationListener.isAnnouncerActive) {
-                      tvStatus.text = "স্ট্যাটাস: ভয়েস অ্যানাউন্সার চালু আছে ✅"
+                      tvStatus.text = "স্ট্যাটাস: ভয়েস অ্যানাউন্সার চালু আছে ✅"
                   } else {
-                      tvStatus.text = "স্ট্যাটাস: ভয়েস অ্যানাউন্সার বন্ধ আছে ⏸️"
+                      tvStatus.text = "স্ট্যাটাস: ভয়েস অ্যানাউন্সার বন্ধ আছে ⏸️"
                   }
               }
           }
           EOF
 
-          # 7. WhatsAppNotificationListener.kt (নোটিফিকেশন রিড এবং বাংলায় কথা বলা)
+          # 7. WhatsAppNotificationListener.kt
           cat << 'EOF' > app/src/main/java/com/example/wavoiceannouncer/WhatsAppNotificationListener.kt
           package com.example.wavoiceannouncer
 
@@ -231,18 +234,15 @@ jobs:
                   if (!isAnnouncerActive || sbn == null) return
 
                   val packageName = sbn.packageName
-                  // সাধারণ WhatsApp এবং WhatsApp Business ফিল্টারিং
                   if (packageName == "com.whatsapp" || packageName == "com.whatsapp.w4b") {
                       val extras = sbn.notification.extras
                       val title = extras.getString(Notification.EXTRA_TITLE) ?: ""
                       val message = extras.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
 
-                      // সিস্টেম নোটিফিকেশন, ব্যাকআপ নোটিফিকেশন ও ফাঁকা মেসেজ স্কিপ করা
                       if (message.isEmpty() || title.contains("messages") || title.contains("WhatsApp") || title.contains("Checking for")) return
 
-                      val speechText = "$title পাঠিয়েছেন: $message"
+                      val speechText = "$title পাঠিয়েছেন: $message"
 
-                      // ডুপ্লিকেট অ্যানাউন্সমেন্ট এড়ানো
                       if (speechText != lastSpokenMessage) {
                           lastSpokenMessage = speechText
                           speakOut(speechText)
@@ -285,7 +285,7 @@ jobs:
               <TextView
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:text="হোয়াটসঅ্যাপ ভয়েস স্পিকার"
+                  android:text="হোয়াটসঅ্যাপ ভয়েস স্পিকার"
                   android:textColor="#FFFFFF"
                   android:textSize="22sp"
                   android:textStyle="bold"
@@ -295,7 +295,7 @@ jobs:
                   android:id="@+id/tvStatus"
                   android:layout_width="wrap_content"
                   android:layout_height="wrap_content"
-                  android:text="স্ট্যাটাস: ভয়েস অ্যানাউন্সার চালু আছে ✅"
+                  android:text="স্ট্যাটাস: ভয়েস অ্যানাউন্সার চালু আছে ✅"
                   android:textColor="#94A3B8"
                   android:textSize="14sp"
                   android:layout_marginBottom="32dp" />
@@ -315,7 +315,7 @@ jobs:
                   android:id="@+id/btnToggle"
                   android:layout_width="match_parent"
                   android:layout_height="52dp"
-                  android:text="ভয়েস সার্ভিস বন্ধ করুন"
+                  android:text="ভয়েস সার্ভিস বন্ধ করুন"
                   android:textSize="15sp"
                   android:textStyle="bold"
                   android:textColor="#FFFFFF"
@@ -326,8 +326,35 @@ jobs:
 
           cat << 'EOF' > app/src/main/res/values/strings.xml
           <resources>
-              <string name="app_name">WA ভয়েস অ্যানাউন্সার</string>
+              <string name="app_name">WA ভয়েস অ্যানাউন্সার</string>
           </resources>
+          EOF
+
+          # --- নতুন যোগ করা আইকন ফাইলগুলো (Directly in build.yml) ---
+          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_background.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#10B981" android:pathData="M0,0h108v108h-108z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/drawable/ic_launcher_foreground.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp"
+              android:viewportWidth="24" android:viewportHeight="24">
+              <path android:fillColor="#FFFFFF" android:pathData="M12,2C6.48,2 2,6.48 2,12c0,1.85 0.51,3.59 1.41,5.1L2,22l5.1,-1.41C8.61,21.49 10.35,22 12,22c5.52,0 10,-4.48 10,-10S17.52,2 12,2z"/>
+          </vector>
+          EOF
+
+          cat << 'EOF' > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@drawable/ic_launcher_background"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
           EOF
 
       - name: Setup Gradle
@@ -336,6 +363,7 @@ jobs:
           gradle-version: '8.5'
 
       - name: Build Debug APK
+        using: run
         run: gradle assembleDebug --stacktrace
 
       - name: Upload APK
