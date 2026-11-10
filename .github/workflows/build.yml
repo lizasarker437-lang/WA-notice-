@@ -363,7 +363,6 @@ jobs:
           gradle-version: '8.5'
 
       - name: Build Debug APK
-        using: run
         run: gradle assembleDebug --stacktrace
 
       - name: Upload APK
